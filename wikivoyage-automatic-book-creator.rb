@@ -15,7 +15,7 @@ puts 'Loading file...'
 counter = 0
 articles = Hash.new { |hash, key| hash[key] = { type: nil, status: nil, parent: nil, children: [] } }
 Nokogiri::XML(File.open(dump_path)).css('page').each do |article|
-    puts "#{counter.to_s.gsub(/(\d)(?=(\d\d\d)+(?!\d))/,'\\1 ').rjust(7)} pages processed" if counter % 5000 == 0
+    puts "#{counter.to_s.gsub(/(\d)(?=(\d\d\d)+(?!\d))/,'\\1 ').rjust(7)} pages processed" if counter % 5000 == 0 && counter > 0
     counter += 1
 
     title = article.at_css('title').content
