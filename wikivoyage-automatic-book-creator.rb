@@ -20,7 +20,7 @@ Nokogiri::XML(File.open(dump_path)).css('page').each do |article|
 
     title = article.at_css('title').content
     text  = article.at_css('text').content
-    next if text.match(/\{\{\s*disamb\s*\}\}/i)
+    next if text.match(/\{\{\s*(?:disamb|disambig|disambiguation|dab)\s*\}\}/i)
 
     # WARNING This method for storing redirections has it's limits.
     # It implies that element are never assigned again - http://stackoverflow.com/a/15914209
