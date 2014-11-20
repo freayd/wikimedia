@@ -9,6 +9,7 @@ article_statuses = %w[stub outline usable guide star]
 
 # TODO Use a config file instead
 dump_path = File.join(File.dirname(__FILE__), 'enwikivoyage-latest-pages-articles.xml')
+book_root = 'Taiwan'
 
 # Collect informations (type, status, parent and redirections) for every article
 puts 'Loading file...'
@@ -50,7 +51,13 @@ Nokogiri::XML(File.open(dump_path)).css('page').each do |article|
     end
 end
 
-# TODO Find all articles that have the required parent/grandparent
+# Find all articles that have the required parent/grandparent
+book_articles = []
+find_children = lambda do |title|
+    book_articles << title
+    articles[title][:children].each { |child| find_children.call(child) }
+end
+find_children.call(book_root)
 
 # TODO Build a smart table of contents
 
