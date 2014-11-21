@@ -1,3 +1,6 @@
 source "https://rubygems.org"
+gem "activerecord"
+gem "activesupport"
 gem "mediawiki_api"
 gem "nokogiri"
+gem "sqlite3"

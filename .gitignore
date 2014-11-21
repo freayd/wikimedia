@@ -1,4 +1,6 @@
 enwikivoyage-latest-pages-articles.xml
+*.sqlite3
+*.log
 
 # https://help.github.com/articles/ignoring-files
 
