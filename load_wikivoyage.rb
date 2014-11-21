@@ -5,7 +5,7 @@ require 'nokogiri'
 require 'yaml'
 
 def open_wikivoyage
-    ActiveRecord::Base.establish_connection(YAML::load(File.open('config/wikivoyage-database.yml')))
+    ActiveRecord::Base.establish_connection(YAML::load(File.open('config/wikivoyage_database.yml')))
     ActiveRecord::Base.logger = Logger.new(File.open('db/wikivoyage.log', 'a'))
 end
 

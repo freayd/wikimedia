@@ -2,7 +2,7 @@
 
 require 'rubygems'
 require 'bundler/setup'
-require_relative 'load-wikivoyage-data'
+require_relative 'load_wikivoyage'
 
 # TODO Use a config file instead
 book_root = 'Taiwan'
