@@ -1,5 +1,5 @@
 require 'active_record'
-require_relative 'load-wikivoyage-data'
+require_relative 'load_wikivoyage'
 
 task :default => :migrate
  
