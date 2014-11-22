@@ -12,7 +12,7 @@ end
 def load_wikivoyage
     open_wikivoyage
 
-    return if WikivoyageArticle.count > 0
+    return if Article.count > 0
 
     types    = %w[Continent Country Region City District Park Airport Itinerary DiveGuide Phrasebook Topic]
     statuses = %w[Outline Usable Guide Star]
@@ -72,11 +72,11 @@ def load_wikivoyage
 
     puts 'Processing redirects...'
     redirects.each do |article, redirect_title|
-        article.update(redirect: WikivoyageArticle.find_by(title: redirect_title))
+        article.update(redirect: Article.find_by(title: redirect_title))
     end
 
     puts 'Processing parents...'
     parents.each do |article, parent_title|
-        article.update(parent: WikivoyageArticle.find_by(title: parent_title))
+        article.update(parent: Article.find_by(title: parent_title))
     end
 end

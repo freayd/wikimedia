@@ -1,9 +1,9 @@
 require_relative 'common'
 
 class WikivoyageArticle < Article
-    has_many :children, class_name: 'WikivoyageArticle',
+    has_many :children, class_name: 'Article',
                         foreign_key: 'parent_id'
-    belongs_to :parent, class_name: 'WikivoyageArticle'
+    belongs_to :parent, class_name: 'Article'
 end
 
 class Continent < WikivoyageArticle
