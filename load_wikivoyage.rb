@@ -47,8 +47,8 @@ def load_wikivoyage
             type   = 'WikivoyageArticle'
             status = 'Stub'
         else
-            types.map do |a_type|
-                statuses.map do |a_status|
+            types.each do |a_type|
+                statuses.each do |a_status|
                     if text.match(/\{\{\s*(?:#{a_status})(?:#{a_type})\s*\}\}/i)
                         type   = a_type
                         status = a_status
