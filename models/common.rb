@@ -29,17 +29,34 @@ class Article < ActiveRecord::Base
         links
     end
 
-    def book(paper_size: 'a4', table_of_contents: 'auto', columns: 2)
-        puts <<-EOS.strip_heredoc
-            {{saved_book
-             | setting-papersize = #{paper_size}
-             | setting-toc = #{table_of_contents}
-             | setting-columns = #{columns}
-            }}
+    def book(title: self.title, subtitle: nil,
+             cover_image: nil, cover_color: nil, cover_text_color: nil,
+             paper_size: 'a4', show_table_of_contents: 'auto', columns: 2,
+             description: nil, sort_as: nil)
+        parameters = {
+            # Cover
+            'title'       => title,
+            'subtitle'    => subtitle,
+            'cover-image' => cover_image,
+            'cover-color' => cover_color,
+            'text-color'  => cover_text_color,
+            # Book Creator
+            'setting-papersize' => paper_size,
+            'setting-toc'       => show_table_of_contents,
+            'setting-columns'   => columns,
+            # Maintenance
+            'description' => description,
+            'sort_as'     => sort_as
+        }
 
-            == #{title} ==
-        EOS
+        puts "{{saved_book#{$/} | " + parameters.collect { |k, v| "#{k} = #{v}" if v }.compact.join("#{$/} | ") + "#{$/}}}"
+        puts
+        puts "== #{title} =="
+        puts "=== #{subtitle} ===" if subtitle
+        puts
         puts book_contents
+        puts
+        puts "[[Category:Books|#{title}]]"
     end
 
     def book_contents
