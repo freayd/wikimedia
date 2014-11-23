@@ -8,4 +8,4 @@ require_relative 'load_wikivoyage'
 book_root = 'Taiwan'
 
 load_wikivoyage
-Article.find_by(title: book_root).book
+puts Article.find_by(title: book_root).book

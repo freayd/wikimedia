@@ -1,5 +1,6 @@
 require_relative 'common'
 require 'active_support/core_ext'
+require_relative '../lib/core_ext'
 
 class WikivoyageArticle < Article
     has_many :children, class_name: 'Article',
@@ -19,7 +20,7 @@ class Country < WikivoyageArticle
     end
 
     def book_contents
-        <<-EOS.gsub(/^\s+/, '')
+        <<-EOS.strip_heredoc(from_first_line: true)
             ;Country
             #{book_entry}
             #{phrasebooks.collect { |article| article.book_entry }.join($/)}

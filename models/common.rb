@@ -1,3 +1,5 @@
+require_relative '../lib/core_ext'
+
 class Article < ActiveRecord::Base
     validates :title, presence: true
 
@@ -49,14 +51,18 @@ class Article < ActiveRecord::Base
             'sort_as'     => sort_as
         }
 
-        puts "{{saved_book#{$/} | " + parameters.collect { |k, v| "#{k} = #{v}" if v }.compact.join("#{$/} | ") + "#{$/}}}"
-        puts
-        puts "== #{title} =="
-        puts "=== #{subtitle} ===" if subtitle
-        puts
-        puts book_contents
-        puts
-        puts "[[Category:Books|#{title}]]"
+        <<-EOS.strip_heredoc(from_first_line: true).gsub(/^#{$/}$/, '')
+            {{saved_book
+             | #{ parameters.collect { |k, v| "#{k} = #{v}" if v }.compact.join("#{$/} | ") }
+            }}
+
+            == #{title} ==
+            #{ "=== #{subtitle} ===" if subtitle }
+
+            #{book_contents}
+
+            [[Category:Books|#{title}]]"
+        EOS
     end
 
     def book_contents
