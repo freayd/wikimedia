@@ -61,7 +61,7 @@ class Article < ActiveRecord::Base
 
             #{book_contents}
 
-            [[Category:Books|#{title}]]"
+            [[Category:Books|#{title}]]
         EOS
     end
 
