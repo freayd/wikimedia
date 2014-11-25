@@ -34,7 +34,7 @@ def load_wikivoyage
         title = xml_article.at_css('title').content
         text  = xml_article.at_css('text').content
         redirect_title = (xml_article.at_css('redirect') || {})['title']
-        parent_title   = (text.match(/\{\{IsPartOf\s*\|\s*([\w ,_\-]+)\s*\}\}/i) || [])[1]
+        parent_title   = (text.match(/\{\{(?:IsPartOf|IsIn)\s*\|\s*([\w ,_\-]+)\s*\}\}(?!.*\{\{(?:IsPartOf|IsIn))/mi) || [])[1]
 
         type = status = nil
         if redirect_title
