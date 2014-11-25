@@ -1,21 +1,23 @@
 require_relative '../lib/core_ext'
 
-class Article < ActiveRecord::Base
-    validates :title, presence: true
+# MediaWiki markup parser
+module MediaWiki
+    # _C characters
+    # _R regexp
+    # _GR greedy regexp
+    # _LR lazy   regexp
+    TEXT_C = '\p{Alnum} _\-\(\)\.#'
+    TEXT_GR = /[#{TEXT_C}]+/
+    TEXT_LR = /[#{TEXT_C}]+?/
+    INTERNAL_LINK_R = /\[\[\s*([#{TEXT_C}]+)(?:\s*\|\s*([#{TEXT_C}\|]*\s*))?\]\]([a-zA-Z]*)/
+    TEXT_OR_LINK_R = /(?:#{TEXT_GR}|#{INTERNAL_LINK_R})/
+    SECTION_R = /(?<!=)(==)[ \t]*(#{TEXT_LR})[ \t]*==(?!=)/
 
-    def inspect
-        title.inspect
-    end
-
-    def follow_redirect
-        self
-    end
-
-    def internal_links
+    def self.internal_links(text)
         return [] unless text
 
         links = []
-        text.scan(/\[\[\s*([a-zA-Z _\-#]+)(?:\s*\|\s*([a-zA-Z _\-#\|]*\s*))?\]\]([a-zA-Z]*)/) do |link|
+        text.scan(MediaWiki::INTERNAL_LINK_R) do |link|
             title = link[0]
             label = (link[1] || '') + link[2]
             if label.empty?
@@ -26,9 +28,61 @@ class Article < ActiveRecord::Base
             links << { title: title, label: label }
         end
 
-        # TODO Scan for the {{seealso}} template (preferably in the same regexp so the order is respected
-
         links
+    end
+
+    def self.linked_articles(text, type: Article)
+        kept = []
+        self.internal_links(text).collect do |link|
+            article = Article.find_by(title: link[:title]).try(:follow_redirect)
+            if article.class == type && !kept.include?(article)
+                kept << article
+                [link[:label], article]
+            end
+        end.compact.to_h
+    end
+end
+
+class Article < ActiveRecord::Base
+    validates :title, presence: true
+
+    def inspect
+        title.inspect
+    end
+
+    def sections
+        s = {}
+
+        lead_section = true
+        section_title = nil
+        next_is = nil
+        text.split(MediaWiki::SECTION_R).each do |t|
+            if lead_section
+                if t != '=='
+                    s[''] = t
+                else
+                    next_is = :section_title
+                end
+                lead_section = false
+            elsif t == '=='
+                next_is = :section_title
+            elsif next_is == :section_title
+                section_title = t
+                next_is = :section_content
+            elsif next_is == :section_content
+                s[section_title] = t
+                next_is = nil
+            end
+        end
+        s
+    end
+
+    def section(name)
+        sections[name]
+    end
+
+    def follow_redirect
+        self
     end
 
     def book(title: self.title, subtitle: nil,
@@ -51,7 +105,7 @@ class Article < ActiveRecord::Base
             'sort_as'     => sort_as
         }
 
-        <<-EOS.strip_heredoc(from_first_line: true).gsub(/^#{$/}$/, '')
+        <<-EOS.strip_heredoc(from_first_line: true).gsub(/^#{$/}$/, '').gsub(/^#{$/}:/, ':')
             {{saved_book
              | #{ parameters.collect { |k, v| "#{k} = #{v}" if v }.compact.join("#{$/} | ") }
             }}
@@ -69,8 +123,20 @@ class Article < ActiveRecord::Base
         book_entry
     end
 
-    def book_entry
-        ":[[#{title}]]"
+    def book_chapter(label = nil)
+        label = title unless label
+        <<-EOS.strip_heredoc
+            ;#{label}
+            :[[#{title}]]
+        EOS
+    end
+
+    def book_entry(label = nil)
+        if label && label != title
+            ":[[#{title}|#{label}]]"
+        else
+            ":[[#{title}]]"
+        end
     end
 end
 
@@ -91,6 +157,10 @@ class Redirect < Article
 
     def book_contents
         redirect.book_contents
+    end
+
+    def book_chapter
+        redirect.book_chapter
     end
 
     def book_entry
