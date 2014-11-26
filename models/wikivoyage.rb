@@ -52,14 +52,11 @@ class Country < WikivoyageArticle
     end
 
     def book_contents
-        <<-EOS.strip_heredoc(from_first_line: true)
-            #{book_chapter('Country')}
-            #{phrasebooks.collect { |label, article| article.book_entry }.join($/)}
+        super(regions)
+    end
 
-            #{regions.collect do |label, article|
-                article.book_chapter(label)
-            end.join($/)}
-        EOS
+    def book_chapter
+        super(title, phrasebooks)
     end
 end
 

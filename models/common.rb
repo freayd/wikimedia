@@ -102,38 +102,53 @@ class Article < ActiveRecord::Base
             'sort_as'     => sort_as
         }
 
-        <<-EOS.strip_heredoc(from_first_line: true).gsub(/^#{$/}$/, '').gsub(/^#{$/}:/, ':')
+        <<-EOS.strip_heredoc(from_first_line: true)
             {{saved_book
              | #{ parameters.collect { |k, v| "#{k} = #{v}" if v }.compact.join("#{$/} | ") }
             }}
 
             == #{title} ==
-            #{ "=== #{subtitle} ===" if subtitle }
-
+            #{ "=== #{subtitle} ===#{$/}" if subtitle }
             #{book_contents}
 
             [[Category:Books|#{title}]]
         EOS
     end
 
-    def book_contents
-        book_entry
+    BookContent = Struct.new(:chapters) do
+        def to_s
+            chapters.join($/ + $/)
+        end
+    end
+    BookChapter = Struct.new(:label, :entries) do
+        def to_s
+            ";#{label}" + $/ + entries.join($/)
+        end
+    end
+    BookEntry = Struct.new(:label, :article) do
+        def to_s
+            if label && label != article.title
+                ":[[#{article.title}|#{label}]]"
+            else
+                ":[[#{article.title}]]"
+            end
+        end
     end
 
-    def book_chapter(label = nil)
-        label = title unless label
-        <<-EOS.strip_heredoc
-            ;#{label}
-            :[[#{title}]]
-        EOS
+    def book_contents(chapters = {})
+        chapters = chapters.collect { |label, article| article.book_chapter(label) }
+        chapters.unshift(book_chapter)
+        BookContent.new(chapters)
+    end
+
+    def book_chapter(label = nil, entries = {})
+        entries = entries.collect { |label, article| article.book_entry(label) }
+        entries.unshift(book_entry)
+        BookChapter.new(label || title, entries)
     end
 
     def book_entry(label = nil)
-        if label && label != title
-            ":[[#{title}|#{label}]]"
-        else
-            ":[[#{title}]]"
-        end
+        BookEntry.new(label || title, self)
     end
 end
 
@@ -152,15 +167,15 @@ class Redirect < Article
         redirect.book
     end
 
-    def book_contents
-        redirect.book_contents
+    def book_contents(chapters = [ book_chapter ])
+        redirect.book_contents(chapters)
     end
 
-    def book_chapter
-        redirect.book_chapter
+    def book_chapter(label = nil, entries = {})
+        redirect.book_chapter(label, entries)
     end
 
-    def book_entry
-        redirect.book_entry
+    def book_entry(label = nil)
+        redirect.book_entry(label)
     end
 end
