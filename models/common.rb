@@ -32,14 +32,11 @@ module MediaWiki
     end
 
     def self.linked_articles(text, type: Article)
-        kept = []
-        self.internal_links(text).collect do |link|
+        self.internal_links(text).each_with_object({}) do |link, articles|
             article = Article.find_by(title: link[:title]).try(:follow_redirect)
-            if article.class == type && !kept.include?(article)
-                kept << article
-                [link[:label], article]
-            end
-        end.compact.to_h
+            articles[link[:label]] = article if article.class == type &&
+                                                !articles.has_value?(article)
+        end
     end
 end
 
