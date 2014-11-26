@@ -34,7 +34,7 @@ module MediaWiki
     def self.linked_articles(text, type: Article)
         self.internal_links(text).each_with_object({}) do |link, articles|
             article = Article.find_by(title: link[:title]).try(:follow_redirect)
-            articles[link[:label]] = article if article.class == type &&
+            articles[link[:label]] = article if article.is_a?(type) &&
                                                 !articles.has_value?(article)
         end
     end
@@ -117,12 +117,19 @@ class Article < ActiveRecord::Base
 
     BookContent = Struct.new(:chapters) do
         def to_s
-            chapters.join($/ + $/)
+            chapters.join($/ * 2)
         end
     end
-    BookChapter = Struct.new(:label, :entries) do
+    BookChapter = Struct.new(:parent, :label, :entries) do
         def to_s
-            ";#{label}" + $/ + entries.join($/)
+            entries_are_chapters = entries.try(:first).is_a?(BookChapter)
+            s = ''
+            if parent
+                s << ";#{parent.label} - #{label}" << $/
+            elsif !entries_are_chapters
+                s << ";#{label}" << $/
+            end
+            s + entries.join(entries_are_chapters ? $/ * 2 : $/)
         end
     end
     BookEntry = Struct.new(:label, :article) do
@@ -136,7 +143,19 @@ class Article < ActiveRecord::Base
     end
 
     def book_contents(chapters = {})
-        chapters = chapters.collect { |label, article| article.book_chapter(label) }
+        chapters = chapters.collect do |label, article|
+            if article.is_a?(Hash)
+                parent_chapter = BookChapter.new(nil, label)
+                parent_chapter.entries = article.collect do |label, article|
+                    child_chapter = article.book_chapter(label)
+                    child_chapter.parent = parent_chapter
+                    child_chapter
+                end
+                parent_chapter
+            else
+                article.book_chapter(label)
+            end
+        end
         chapters.unshift(book_chapter)
         BookContent.new(chapters)
     end
@@ -144,7 +163,7 @@ class Article < ActiveRecord::Base
     def book_chapter(label = nil, entries = {})
         entries = entries.collect { |label, article| article.book_entry(label) }
         entries.unshift(book_entry)
-        BookChapter.new(label || title, entries)
+        BookChapter.new(nil, label || title, entries)
     end
 
     def book_entry(label = nil)
@@ -167,15 +186,15 @@ class Redirect < Article
         redirect.book
     end
 
-    def book_contents(chapters = [ book_chapter ])
-        redirect.book_contents(chapters)
+    def book_contents(*args)
+        redirect.book_contents(*args)
     end
 
-    def book_chapter(label = nil, entries = {})
-        redirect.book_chapter(label, entries)
+    def book_chapter(*args)
+        redirect.book_chapter(*args)
     end
 
-    def book_entry(label = nil)
-        redirect.book_entry(label)
+    def book_entry(*args)
+        redirect.book_entry(*args)
     end
 end

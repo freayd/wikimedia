@@ -12,39 +12,61 @@ class Continent < WikivoyageArticle
 end
 
 class Country < WikivoyageArticle
+    # {
+    #   'North' => Region<North of this country>,
+    #   'South' => Region<South of this country>,
+    #   'Islands' => {
+    #                  'Yellow Island' => Region<Yellow Island (this country)>,
+    #                  'Mystic Island' => Region<Mystic Island (this country)>
+    #                }
+    # }
     def regions
-        regions = {}
-        append = lambda do |name, article|
-            regions[name] = article if article.parent == self &&
-                                       !regions.has_value?(article)
+        regions_h = {}
+        regions_a = []
+        append = lambda do |label, sublabel, article|
+            if article.parent == self && !regions_a.include?(article)
+                if sublabel
+                    if regions_h[label]
+                        unless regions_h[label].is_a?(Hash)
+                            regions_h[label] = { regions_h[label].title => regions_h[label] }
+                        end
+                    else
+                        regions_h[label] = {}
+                    end
+                    regions_h[label][sublabel] = article
+                else
+                    regions_h[label] = article
+                end
+                regions_a << article
+            end
         end
 
         # From the {{Regionlist}} template under the 'Regions' section
         section('Regions').try(:scan, /region(\d+)name\s*=\s*(#{MediaWiki::TEXT_OR_LINK_R})/i) do |id, name|
             label, article = MediaWiki::linked_articles(name, type: Region).to_a.first
             if article
-                append.call(label, article)
+                append.call(label, nil, article)
             else
                 # If the region name is not an article, then use the items
                 name.strip!
                 items = section('Regions').match(/region#{id}items\s*=\s*([^\|\}]+)/i).try('[]', 1) || ''
                 MediaWiki::linked_articles(items, type: Region).each do |label, article|
-                    append.call("#{name} - #{label}", article)
+                    append.call(name, label, article)
                 end
             end
         end
 
         # From the 'Regions' section (not in the {{Regionlist}} template)
         MediaWiki::linked_articles(section('Regions'), type: Region).each do |label, article|
-            append.call(label, article)
+            append.call(label, nil, article)
         end
 
         # From the children articles
         children.to_a.each do |child|
-            append.call(child.title, child) if child.class == Region
+            append.call(child.title, nil, child) if child.is_a?(Region)
         end
 
-        regions
+        regions_h
     end
 
     def phrasebooks
